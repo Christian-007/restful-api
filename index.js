@@ -1,5 +1,7 @@
 var express = require('express');
 var app = express();
+var sqlite3 = require('sqlite3').verbose();
+var db = new sqlite3.Database('db-app');
 
 app.set('port', (process.env.PORT || 5000));
 
@@ -14,24 +16,7 @@ app.get('/', function(request, response) {
 });
 
 app.get('/api', function(req, res){
-  // Initialise sqlite3 database
-  var sqlite3 = require('sqlite3').verbose();
-  var db = new sqlite3.Database('test');
-
-  db.serialize(function() {
-    db.run("CREATE TABLE if not exists user (id INT, dt TEXT)");
-
-    var stmt = db.prepare("INSERT INTO user VALUES(?,?)");
-    for(var i=0; i<10; i++){
-      var d = new Date();
-      var n = d.toLocaleTimeString();
-      stmt.run(i, n);
-    }
-
-    stmt.finalize();
-  });
-  
-  var sql = "SELECT id,dt from user";
+  var sql = "SELECT * from users";
   db.all(sql, function(err,rows){
     res.end(JSON.stringify(rows));
   });
