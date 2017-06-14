@@ -36,7 +36,30 @@ app.get('/users', function(req, res){
 
 });
 
-// POST: user registration
+// POST user login
+app.post('/login', function(req, response){
+  var email = req.body.email; var password = req.body.password;
+
+  db.get("SELECT * FROM users WHERE email = ?", email, function(err, row) {
+    if(!row){
+      response.send(false);
+      console.log("Wrong email");  
+    }else {
+      bcrypt.compare(password, row.password, function(err, res) {
+        if(res == true){
+          response.send(res);
+          console.log("Correct password");
+        }else {
+          response.send(res);
+          console.log("Wrong password");
+        } 
+      });
+    }
+
+  });
+});
+
+// POST user registration
 app.post('/signup', function(req, res){
   var fname = req.body.fname; var lname = req.body.lname; var location = req.body.location;
   var email = req.body.email; var password = req.body.password;
