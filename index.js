@@ -22,11 +22,13 @@ app.set('view engine', 'ejs');
 
 app.use(cors());
 
+// load index page
 app.get('/', function(request, response) {
   response.render('pages/index');
 });
 
-app.get('/api', function(req, res){
+// GET all of the users
+app.get('/users', function(req, res){
   var sql = "SELECT * from users";
   db.all(sql, function(err,rows){
     res.end(JSON.stringify(rows));
@@ -34,6 +36,7 @@ app.get('/api', function(req, res){
 
 });
 
+// POST: user registration
 app.post('/signup', function(req, res){
   var fname = req.body.fname; var lname = req.body.lname; var location = req.body.location;
   var email = req.body.email; var password = req.body.password;
