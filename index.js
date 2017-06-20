@@ -27,7 +27,7 @@ app.get('/', function(request, response) {
   response.render('pages/index');
 });
 
-// GET all of the users
+// GET all of the users don't show the password
 app.get('/users', function(req, res){
   var sql = "SELECT * from users";
   db.all(sql, function(err,rows){
@@ -47,7 +47,8 @@ app.post('/login', function(req, response){
     }else {
       bcrypt.compare(password, row.password, function(err, res) {
         if(res == true){
-          response.send(res);
+          // console.log(row);
+          response.send(row);
           console.log("Correct password");
         }else {
           response.send(res);
