@@ -29,7 +29,7 @@ app.get('/', function(request, response) {
 
 // GET all of the users don't show the password
 app.get('/users', function(req, res){
-  var sql = "SELECT * from users";
+  var sql = "SELECT id,fname,lname,email,location from users";
   db.all(sql, function(err,rows){
     res.end(JSON.stringify(rows));
   });
