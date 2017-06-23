@@ -27,9 +27,46 @@ app.get('/', function(request, response) {
   response.render('pages/index');
 });
 
-// GET all of the users don't show the password
+// GET all of the users
 app.get('/users', function(req, res){
   var sql = "SELECT id,fname,lname,email,location from users";
+  db.all(sql, function(err,rows){
+    res.end(JSON.stringify(rows));
+  });
+
+});
+
+// GET all of the events
+app.get('/events', function(req, res){
+  var sql = "SELECT * from events";
+  db.all(sql, function(err,rows){
+    res.end(JSON.stringify(rows));
+  });
+
+});
+
+// GET all of the events
+app.get('/events/users/:user_id', function(req, res){
+  var sql = "SELECT * from events WHERE user_id="+req.params.user_id;
+  db.all(sql, function(err,rows){
+    res.end(JSON.stringify(rows));
+  });
+
+});
+
+// GET all data from the users_events (junction table)
+app.get('/users_events', function(req, res){
+  var sql = "SELECT * from users_events";
+  db.all(sql, function(err,rows){
+    res.end(JSON.stringify(rows));
+  });
+
+});
+
+// GET all users inside of a particular event
+app.get('/users_events/:event_id', function(req, res){
+  // console.log(req.params.event_id); 
+  var sql = "SELECT * from users INNER JOIN users_events ON users_events.user_id=users.id WHERE users_events.event_id="+req.params.event_id;
   db.all(sql, function(err,rows){
     res.end(JSON.stringify(rows));
   });
@@ -78,6 +115,36 @@ app.post('/signup', function(req, res){
 
   console.log(email + ' ' + fname + ' ' + lname + ' ' + location + ' ' + password);
   // res.send(email + ' ' + fname + ' ' + lname + ' ' + location + ' ' + password);
+});
+
+// POST users join events
+app.post('/join_events', function(req, res){
+  var user_id = req.body.user_id;
+  var event_id = req.body.event_id;
+
+  db.serialize(function() {
+    var stmt = db.prepare("INSERT INTO users_events (user_id, event_id) VALUES(?,?)");
+    stmt.run(user_id, event_id);
+    stmt.finalize();
+  });
+
+  console.log(user_id+ ", " + event_id);
+});
+
+// POST create events by users
+app.post('/create_events', function(req, res){
+  var title = req.body.title; var description = req.body.description; var location = req.body.location;
+  var startdate = req.body.startdate; var starttime = req.body.starttime;
+  var enddate = req.body.enddate; var endtime = req.body.endtime; var type = req.body.type;
+  var user_id = req.body.user_id;
+
+  db.serialize(function() {
+    var stmt = db.prepare("INSERT INTO events (title, description, location, startdate, starttime, enddate, endtime, type, user_id) VALUES(?,?,?,?,?,?,?,?,?)");
+    stmt.run(title,description,location,startdate,starttime,enddate,endtime,type,user_id);
+    stmt.finalize();
+  });
+
+  console.log(title+ ", " + description+ ", " + location+ ", " + startdate+ ", " + starttime+ ", " + enddate+ ", " + endtime+ ", " + type+ ", " + user_id);
 });
 
 app.listen(app.get('port'), function() {
