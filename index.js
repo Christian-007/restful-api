@@ -55,9 +55,18 @@ app.get('/events', function(req, res){
 
 });
 
-// GET all of the events of a particular user
-app.get('/events/users/:user_id', function(req, res){
-  var sql = "SELECT * from events WHERE user_id="+req.params.user_id;
+// GET my events of a user
+app.get('/my_events/:user_id', function(req, res){
+  var sql = "SELECT events.id, events.title, events.description, events.location, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname from events INNER JOIN users ON events.user_id="+ req.params.user_id +" WHERE events.user_id=" + req.params.user_id + " AND users.id="+req.params.user_id;
+  db.all(sql, function(err,rows){
+    res.end(JSON.stringify(rows));
+  });
+
+});
+
+// GET upcoming events of a user
+app.get('/upcoming_events/:user_id', function(req, res){
+  var sql = "SELECT events.id, events.title, events.description, events.location, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname from events INNER JOIN users_events ON events.id=users_events.event_id INNER JOIN users ON events.user_id=users.id WHERE users_events.user_id="+req.params.user_id;
   db.all(sql, function(err,rows){
     res.end(JSON.stringify(rows));
   });
@@ -149,9 +158,22 @@ app.post('/create_events', function(req, res){
   var user_id = req.body.user_id;
 
   db.serialize(function() {
-    var stmt = db.prepare("INSERT INTO events (title, description, location, startdate, starttime, enddate, endtime, type, user_id) VALUES(?,?,?,?,?,?,?,?,?)");
-    stmt.run(title,description,location,startdate,starttime,enddate,endtime,type,user_id);
-    stmt.finalize();
+
+    var sql="INSERT INTO events (title, description, location, startdate, starttime, enddate, endtime, type, user_id) VALUES(?,?,?,?,?,?,?,?,?)";
+    db.run(sql,title,description,location,startdate,starttime,enddate,endtime,type,user_id,function(err){
+      if(err){
+        callback({"status":false,"val":err});
+        console.log("error occurred")
+      }else{
+        console.log("val  "+this.lastID);
+
+        // INSERT reference to users_events junction table
+        var stmt2 = db.prepare("INSERT INTO users_events (user_id, event_id) VALUES(?,?)");
+        stmt2.run(user_id, this.lastID);
+        stmt2.finalize();
+        // callback({"status":true,"val":""});
+      }
+    });
   });
 
   console.log(title+ ", " + description+ ", " + location+ ", " + startdate+ ", " + starttime+ ", " + enddate+ ", " + endtime+ ", " + type+ ", " + user_id);
