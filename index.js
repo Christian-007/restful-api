@@ -36,9 +36,9 @@ app.get('/users', function(req, res){
 
 });
 
-// GET all of the events
-app.get('/events', function(req, res){
-  var sql = "SELECT * from events";
+// GET a particular user
+app.get('/user/:user_id', function(req, res){
+  var sql = "SELECT id,fname,lname,email,location from users WHERE id="+req.params.user_id;
   db.all(sql, function(err,rows){
     res.end(JSON.stringify(rows));
   });
@@ -46,6 +46,16 @@ app.get('/events', function(req, res){
 });
 
 // GET all of the events
+app.get('/events', function(req, res){
+  // var sql = "SELECT * from events";
+  var sql = "SELECT events.id, events.title, events.description, events.location, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname from events INNER JOIN users ON events.user_id=users.id";
+  db.all(sql, function(err,rows){
+    res.end(JSON.stringify(rows));
+  });
+
+});
+
+// GET all of the events of a particular user
 app.get('/events/users/:user_id', function(req, res){
   var sql = "SELECT * from events WHERE user_id="+req.params.user_id;
   db.all(sql, function(err,rows){
