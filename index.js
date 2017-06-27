@@ -176,7 +176,7 @@ app.post("/img_upload", upload.single("file"), function(req, res) {
 });
 
 // POST create events by users
-app.post('/create_events' function(req, res){
+app.post('/create_events', function(req, res){
   var title = req.body.title; var description = req.body.description; var location = req.body.location;
   var startdate = req.body.startdate; var starttime = req.body.starttime;
   var enddate = req.body.enddate; var endtime = req.body.endtime; var type = req.body.type;
