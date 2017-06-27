@@ -1,14 +1,20 @@
 var express = require('express');
 var cors = require('cors') // Cross Origin Resource Sharing
-var app = express();
 var sqlite3 = require('sqlite3').verbose();
 var db = new sqlite3.Database('db-app');
+var path = require('path');
+var fs = require('fs');
 
 // Encrypt password
 var bcrypt = require('bcrypt');
 const saltRounds = 10;
 
 var bodyParser = require('body-parser');
+var multer  = require('multer');
+var upload = multer({ dest: 'uploads/' })
+
+var app = express();
+
 app.use(bodyParser.json()); // support json encoded bodies
 app.use(bodyParser.urlencoded({ extended: true })); // support encoded bodies
 
@@ -48,7 +54,7 @@ app.get('/user/:user_id', function(req, res){
 // GET all of the events
 app.get('/events', function(req, res){
   // var sql = "SELECT * from events";
-  var sql = "SELECT events.id, events.title, events.description, events.location, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname from events INNER JOIN users ON events.user_id=users.id";
+  var sql = "SELECT events.id, events.title, events.description, events.location, events.imgName, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname from events INNER JOIN users ON events.user_id=users.id";
   db.all(sql, function(err,rows){
     res.end(JSON.stringify(rows));
   });
@@ -57,7 +63,7 @@ app.get('/events', function(req, res){
 
 // GET my events of a user
 app.get('/my_events/:user_id', function(req, res){
-  var sql = "SELECT events.id, events.title, events.description, events.location, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname from events INNER JOIN users ON events.user_id="+ req.params.user_id +" WHERE events.user_id=" + req.params.user_id + " AND users.id="+req.params.user_id;
+  var sql = "SELECT events.id, events.title, events.description, events.location, events.imgName, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname from events INNER JOIN users ON events.user_id="+ req.params.user_id +" WHERE events.user_id=" + req.params.user_id + " AND users.id="+req.params.user_id;
   db.all(sql, function(err,rows){
     res.end(JSON.stringify(rows));
   });
@@ -66,7 +72,7 @@ app.get('/my_events/:user_id', function(req, res){
 
 // GET upcoming events of a user
 app.get('/upcoming_events/:user_id', function(req, res){
-  var sql = "SELECT events.id, events.title, events.description, events.location, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname from events INNER JOIN users_events ON events.id=users_events.event_id INNER JOIN users ON events.user_id=users.id WHERE users_events.user_id="+req.params.user_id;
+  var sql = "SELECT events.id, events.title, events.description, events.location, events.imgName, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname from events INNER JOIN users_events ON events.id=users_events.event_id INNER JOIN users ON events.user_id=users.id WHERE users_events.user_id="+req.params.user_id;
   db.all(sql, function(err,rows){
     res.end(JSON.stringify(rows));
   });
@@ -150,17 +156,37 @@ app.post('/join_events', function(req, res){
   console.log(user_id+ ", " + event_id);
 });
 
+// Return image
+app.get('/image/:img_name', function (req, res) {
+  res.sendFile(path.resolve('./uploads/'+req.params.img_name));
+});
+
+// Upload image
+app.post("/img_upload", upload.single("file"), function(req, res) {
+  console.log(req.file);
+
+  // rename the file into an appropriate name
+  fs.rename(req.file.path, 'uploads/'+req.file.originalname, function(err) {
+      if ( err ) {
+        console.log('ERROR: ' + err);
+      } else {
+        console.log("Renamed successfully");
+      }
+  });
+});
+
 // POST create events by users
-app.post('/create_events', function(req, res){
+app.post('/create_events' function(req, res){
   var title = req.body.title; var description = req.body.description; var location = req.body.location;
   var startdate = req.body.startdate; var starttime = req.body.starttime;
   var enddate = req.body.enddate; var endtime = req.body.endtime; var type = req.body.type;
   var user_id = req.body.user_id;
+  var imgName = req.body.imgName;
 
   db.serialize(function() {
 
-    var sql="INSERT INTO events (title, description, location, startdate, starttime, enddate, endtime, type, user_id) VALUES(?,?,?,?,?,?,?,?,?)";
-    db.run(sql,title,description,location,startdate,starttime,enddate,endtime,type,user_id,function(err){
+    var sql="INSERT INTO events (title, description, location, imgName, startdate, starttime, enddate, endtime, type, user_id) VALUES(?,?,?,?,?,?,?,?,?,?)";
+    db.run(sql,title,description,location,imgName,startdate,starttime,enddate,endtime,type,user_id,function(err){
       if(err){
         callback({"status":false,"val":err});
         console.log("error occurred")
@@ -176,7 +202,7 @@ app.post('/create_events', function(req, res){
     });
   });
 
-  console.log(title+ ", " + description+ ", " + location+ ", " + startdate+ ", " + starttime+ ", " + enddate+ ", " + endtime+ ", " + type+ ", " + user_id);
+  console.log(title+ ", " + description+ ", " + location+ ", " + imgName + ", " + startdate+ ", " + starttime+ ", " + enddate+ ", " + endtime+ ", " + type+ ", " + user_id);
 });
 
 app.listen(app.get('port'), function() {
