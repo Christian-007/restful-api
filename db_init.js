@@ -22,7 +22,7 @@ db.serialize(function() {
   //   stmt.finalize();
   // });
 
-  db.run("CREATE TABLE if not exists events (id INTEGER PRIMARY KEY, title TEXT, description TEXT, location TEXT, imgName TEXT, startdate TEXT, starttime TEXT, enddate TEXT, endtime TEXT, type TEXT, user_id INTEGER, FOREIGN KEY(user_id) REFERENCES users(id))");
+  db.run("CREATE TABLE if not exists events (id INTEGER PRIMARY KEY, title TEXT, description TEXT, location TEXT, city TEXT, imgName TEXT, startdate TEXT, starttime TEXT, enddate TEXT, endtime TEXT, type TEXT, user_id INTEGER, FOREIGN KEY(user_id) REFERENCES users(id))");
   // var stmt = db.prepare("INSERT INTO events (title, description, location, startdate, starttime, enddate, endtime, type, user_id) VALUES(?,?,?,?,?,?,?,?,?)");
   // stmt.run("Meal at Beehive", "hello this is a description", "Sheffield", "2017-06-20", "18:00", "2017-06-20", "20:00", "public", 1);
   // stmt.finalize();

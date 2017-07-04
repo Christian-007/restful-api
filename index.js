@@ -54,7 +54,7 @@ app.get('/user/:user_id', function(req, res){
 // GET all of the events
 app.get('/events', function(req, res){
   // var sql = "SELECT * from events";
-  var sql = "SELECT events.id, events.title, events.description, events.location, events.imgName, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname from events INNER JOIN users ON events.user_id=users.id";
+  var sql = "SELECT events.id, events.title, events.description, events.location, events.city, events.imgName, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname from events INNER JOIN users ON events.user_id=users.id";
   db.all(sql, function(err,rows){
     res.end(JSON.stringify(rows));
   });
@@ -63,7 +63,7 @@ app.get('/events', function(req, res){
 
 // GET my events of a user
 app.get('/my_events/:user_id', function(req, res){
-  var sql = "SELECT events.id, events.title, events.description, events.location, events.imgName, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname from events INNER JOIN users ON events.user_id="+ req.params.user_id +" WHERE events.user_id=" + req.params.user_id + " AND users.id="+req.params.user_id;
+  var sql = "SELECT events.id, events.title, events.description, events.location, events.city, events.imgName, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname from events INNER JOIN users ON events.user_id="+ req.params.user_id +" WHERE events.user_id=" + req.params.user_id + " AND users.id="+req.params.user_id;
   db.all(sql, function(err,rows){
     res.end(JSON.stringify(rows));
   });
@@ -72,7 +72,7 @@ app.get('/my_events/:user_id', function(req, res){
 
 // GET upcoming events of a user
 app.get('/upcoming_events/:user_id', function(req, res){
-  var sql = "SELECT events.id, events.title, events.description, events.location, events.imgName, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname from events INNER JOIN users_events ON events.id=users_events.event_id INNER JOIN users ON events.user_id=users.id WHERE users_events.user_id="+req.params.user_id;
+  var sql = "SELECT events.id, events.title, events.description, events.location, events.city, events.imgName, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname from events INNER JOIN users_events ON events.id=users_events.event_id INNER JOIN users ON events.user_id=users.id WHERE users_events.user_id="+req.params.user_id;
   db.all(sql, function(err,rows){
     res.end(JSON.stringify(rows));
   });
@@ -180,13 +180,13 @@ app.post('/create_events', function(req, res){
   var title = req.body.title; var description = req.body.description; var location = req.body.location;
   var startdate = req.body.startdate; var starttime = req.body.starttime;
   var enddate = req.body.enddate; var endtime = req.body.endtime; var type = req.body.type;
-  var user_id = req.body.user_id;
+  var user_id = req.body.user_id; var city = req.body.city;
   var imgName = req.body.imgName;
 
   db.serialize(function() {
 
-    var sql="INSERT INTO events (title, description, location, imgName, startdate, starttime, enddate, endtime, type, user_id) VALUES(?,?,?,?,?,?,?,?,?,?)";
-    db.run(sql,title,description,location,imgName,startdate,starttime,enddate,endtime,type,user_id,function(err){
+    var sql="INSERT INTO events (title, description, location, city, imgName, startdate, starttime, enddate, endtime, type, user_id) VALUES(?,?,?,?,?,?,?,?,?,?,?)";
+    db.run(sql,title,description,location,city,imgName,startdate,starttime,enddate,endtime,type,user_id,function(err){
       if(err){
         callback({"status":false,"val":err});
         console.log("error occurred")
@@ -202,7 +202,7 @@ app.post('/create_events', function(req, res){
     });
   });
 
-  console.log(title+ ", " + description+ ", " + location+ ", " + imgName + ", " + startdate+ ", " + starttime+ ", " + enddate+ ", " + endtime+ ", " + type+ ", " + user_id);
+  console.log(title+ ", " + description+ ", " + location+ ", " + city + ", " + imgName + ", " + startdate+ ", " + starttime+ ", " + enddate+ ", " + endtime+ ", " + type+ ", " + user_id);
 });
 
 app.listen(app.get('port'), function() {
