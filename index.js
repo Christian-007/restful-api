@@ -61,6 +61,15 @@ app.get('/events', function(req, res){
 
 });
 
+// GET a particular event
+app.get('/event/:event_id', function(req, res){
+  var sql = "SELECT * from events WHERE id="+req.params.event_id;
+  db.get(sql, function(err,rows){
+    res.end(JSON.stringify(rows));
+  });
+
+});
+
 // GET my events of a user
 app.get('/my_events/:user_id', function(req, res){
   var sql = "SELECT events.id, events.title, events.description, events.location, events.city, events.imgName, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname from events INNER JOIN users ON events.user_id="+ req.params.user_id +" WHERE events.user_id=" + req.params.user_id + " AND users.id="+req.params.user_id;

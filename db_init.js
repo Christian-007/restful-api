@@ -11,7 +11,7 @@ var fname = "Christian"; var lname = "Sunardi"; var email = "christian@gmail.com
 
 db.serialize(function() {
 
-  // db.run("DROP TABLE events");
+  db.run("DROP TABLE events");
   db.run("CREATE TABLE if not exists users (id INTEGER PRIMARY KEY, fname TEXT, lname TEXT, email TEXT, location TEXT, password TEXT)");
 
   // var stmt = db.prepare("INSERT INTO users (fname, lname, email, location, password) VALUES(?,?,?,?,?)");
@@ -27,7 +27,7 @@ db.serialize(function() {
   // stmt.run("Meal at Beehive", "hello this is a description", "Sheffield", "2017-06-20", "18:00", "2017-06-20", "20:00", "public", 1);
   // stmt.finalize();
 
-  // db.run("DROP TABLE users_events");
+  db.run("DROP TABLE users_events");
   db.run("CREATE TABLE if not exists users_events (user_id INTEGER, event_id INTEGER, FOREIGN KEY(user_id) REFERENCES users(id), FOREIGN KEY(event_id) REFERENCES events(id))");
   // var stmt = db.prepare("INSERT INTO users_events (user_id, event_id) VALUES(?,?)");
   // stmt.run(1,2);
