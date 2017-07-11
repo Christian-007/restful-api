@@ -169,9 +169,32 @@ app.post('/join_events', function(req, res){
     var stmt = db.prepare("INSERT INTO users_events (user_id, event_id) VALUES(?,?)");
     stmt.run(user_id, event_id);
     stmt.finalize();
+    res.send(JSON.stringify({ "data": "successfully inserted record" }));
   });
 
   console.log(user_id+ ", " + event_id);
+});
+
+// DELETE: user cancels joining an event
+app.delete('/cancel_event/:user_id/:event_id', function(req, res){
+  var user_id = req.params.user_id;
+  var event_id = req.params.event_id;
+  console.log("USER ID: " + user_id+ ", " + "EVENT ID: " + event_id);
+
+  var sql = "DELETE FROM users_events WHERE user_id="+user_id+" AND event_id="+event_id;
+
+  db.serialize(function() {
+    db.run(sql, function(error) {
+      if (error) {
+        console.log(error);
+      }
+      else {
+        res.send(JSON.stringify({ "data": "successfully deleted record" }));
+        console.log("Successfully delete record!");
+      }
+    });
+  });
+
 });
 
 // Return image
