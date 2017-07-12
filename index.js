@@ -4,6 +4,7 @@ var sqlite3 = require('sqlite3').verbose();
 var db = new sqlite3.Database('db-app');
 var path = require('path');
 var fs = require('fs');
+var async = require('async');
 
 // Encrypt password
 var bcrypt = require('bcrypt');
@@ -175,24 +176,71 @@ app.post('/join_events', function(req, res){
   console.log(user_id+ ", " + event_id);
 });
 
-// DELETE: user cancels joining an event
-app.delete('/cancel_event/:user_id/:event_id', function(req, res){
+// DELETE: event owner cancels an event (no host, event is removed)
+app.delete('/cancel_event/:user_id/:event_id/:owner_id', function(req, res){
   var user_id = req.params.user_id;
   var event_id = req.params.event_id;
-  console.log("USER ID: " + user_id+ ", " + "EVENT ID: " + event_id);
+  var owner_id = req.params.owner_id;
+  var proceed = false;
 
-  var sql = "DELETE FROM users_events WHERE user_id="+user_id+" AND event_id="+event_id;
+  console.log("USER ID: " + user_id+ ", " + " EVENT ID: " + event_id + " OWNER ID: " + owner_id);
+
+  var sql1 = "DELETE FROM events WHERE user_id="+user_id+" AND id="+event_id;
+  var sql2 = "DELETE FROM users_events WHERE event_id="+event_id;
+  var sql3 = "DELETE FROM users_events WHERE user_id="+user_id+" AND event_id="+event_id;
 
   db.serialize(function() {
-    db.run(sql, function(error) {
-      if (error) {
-        console.log(error);
-      }
-      else {
-        res.send(JSON.stringify({ "data": "successfully deleted record" }));
-        console.log("Successfully delete record!");
-      }
-    });
+    // If an owner cancels the event, remove data from events table too
+    if(owner_id==user_id){
+
+      var asyncOps = [
+        function (done) {
+          console.log('1. First Query-');
+          // DELETE a particular event
+          db.run(sql1, function(error) {
+            if (error) {
+              return done(error);
+              console.log(error);
+            }
+            console.log('All done 1');
+            done(null, true);
+          });
+        },
+        function (done) {
+          console.log('2. Second Query-');
+          // DELETE all people within an event
+          db.run(sql2, function(error) {
+            if (error) {
+              return done(error);
+              console.log(error);
+            }
+            else {
+              console.log('All done 2');
+              done(null, true);
+            }
+          });
+        }
+      ];
+
+      async.series(asyncOps, function (err, results) {
+          if (err) return console.log(err);
+          res.send(JSON.stringify({ "data": "successfully deleted record" }));
+          console.log("Successfully delete record from USER_EVENTS table!");
+      });
+
+    }else {
+
+      // DELETE a person within an event
+      db.run(sql3, function(error) {
+        if (error) {
+          console.log(error);
+        }
+        else {
+          res.send(JSON.stringify({ "data": "successfully deleted record" }));
+          console.log("Successfully delete record from USERS_EVENTS table!");
+        }
+      });
+    }
   });
 
 });
