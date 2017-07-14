@@ -36,7 +36,7 @@ app.get('/', function(request, response) {
 
 // GET all of the users
 app.get('/users', function(req, res){
-  var sql = "SELECT id,fname,lname,email,location from users";
+  var sql = "SELECT id,fname,lname,profile_pic,cover_pic,email,location from users";
   db.all(sql, function(err,rows){
     res.end(JSON.stringify(rows));
   });
@@ -117,6 +117,27 @@ app.get('/users_events/:event_id', function(req, res){
 
 });
 
+// PUT: update user details
+app.put("/edit_user/:user_id", function(req, res) {
+  var user_id = req.params.user_id;
+  var fname = req.body.fname; var lname = req.body.lname; var location = req.body.location;
+  var email = req.body.email; var password = req.body.password; 
+  var user_pic = "user_default.png";
+  var cover_pic = "cover_default.png";
+
+  // var sql = "UPDATE users SET fname = '" + fname + " WHERE id="+user_id;
+  console.log(req.body.fname, req.body.lname);
+  db.run("UPDATE users SET fname = ?, lname = ? WHERE id = ?", fname,lname,user_id, function(error) {
+    if (error) {
+      res.sendStatus(404);
+      console.log(error);
+    }
+    else {
+      res.sendStatus(200);
+    }
+  });
+});
+
 // POST user login
 app.post('/login', function(req, response){
   var email = req.body.email; var password = req.body.password;
@@ -145,17 +166,18 @@ app.post('/login', function(req, response){
 app.post('/signup', function(req, res){
   var fname = req.body.fname; var lname = req.body.lname; var location = req.body.location;
   var email = req.body.email; var password = req.body.password;
-  var confpassword = req.body.confpassword;
+  var confpassword = req.body.confpassword; var defaultUserPic = "user_default.png";
+  var cover_pic = "cover_default.png";
 
   db.serialize(function() {
-    var stmt = db.prepare("INSERT INTO users (fname, lname, email, location, password) VALUES(?,?,?,?,?)");
+    var stmt = db.prepare("INSERT INTO users (fname, lname, profile_pic, cover_pic, email, location, password) VALUES(?,?,?,?,?,?,?)");
 
     bcrypt.hash(password, saltRounds, function(err, hash) {
       // Store hash in your password DB. 
       if(err) {
         res.sendStatus(500);
       }else{
-        stmt.run(fname,lname,email,location,hash);
+        stmt.run(fname,lname,defaultUserPic,cover_pic,email,location,hash);
         stmt.finalize();
         res.sendStatus(202);
       }
@@ -251,6 +273,28 @@ app.delete('/cancel_event/:user_id/:event_id/:owner_id', function(req, res){
 
 });
 
+// Return user image
+app.get('/user_image/:img_name', function (req, res) {
+  res.sendFile(path.resolve('./user_picture/'+req.params.img_name));
+});
+
+// Upload user image
+app.post("/user_img_upload", upload.single("file"), function(req, res) {
+  console.log(req.file);
+
+  // rename the file into an appropriate name
+  fs.rename(req.file.path, 'user_picture/'+req.file.originalname, function(err) {
+    if ( err ) {
+      console.log('ERROR: ' + err);
+      res.sendStatus(500);
+    } else {
+      console.log("Renamed successfully");
+      res.sendStatus(202);
+    }
+    res.end();
+  });
+});
+
 // Return image
 app.get('/image/:img_name', function (req, res) {
   res.sendFile(path.resolve('./uploads/'+req.params.img_name));
@@ -262,14 +306,14 @@ app.post("/img_upload", upload.single("file"), function(req, res) {
 
   // rename the file into an appropriate name
   fs.rename(req.file.path, 'uploads/'+req.file.originalname, function(err) {
-      if ( err ) {
-        console.log('ERROR: ' + err);
-        res.sendStatus(500);
-      } else {
-        console.log("Renamed successfully");
-        res.sendStatus(202);
-      }
-      res.end();
+    if ( err ) {
+      console.log('ERROR: ' + err);
+      res.sendStatus(500);
+    } else {
+      console.log("Renamed successfully");
+      res.sendStatus(202);
+    }
+    res.end();
   });
 });
 
