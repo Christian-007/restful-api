@@ -152,9 +152,15 @@ app.post('/signup', function(req, res){
 
     bcrypt.hash(password, saltRounds, function(err, hash) {
       // Store hash in your password DB. 
-      stmt.run(fname,lname,email,location,hash);
-      stmt.finalize();
+      if(err) {
+        res.sendStatus(500);
+      }else{
+        stmt.run(fname,lname,email,location,hash);
+        stmt.finalize();
+        res.sendStatus(202);
+      }
     });
+
   });
 
   console.log(email + ' ' + fname + ' ' + lname + ' ' + location + ' ' + password);
@@ -170,7 +176,7 @@ app.post('/join_events', function(req, res){
     var stmt = db.prepare("INSERT INTO users_events (user_id, event_id) VALUES(?,?)");
     stmt.run(user_id, event_id);
     stmt.finalize();
-    res.send(JSON.stringify({ "data": "successfully inserted record" }));
+    res.sendStatus(202);
   });
 
   console.log(user_id+ ", " + event_id);
@@ -258,9 +264,12 @@ app.post("/img_upload", upload.single("file"), function(req, res) {
   fs.rename(req.file.path, 'uploads/'+req.file.originalname, function(err) {
       if ( err ) {
         console.log('ERROR: ' + err);
+        res.sendStatus(500);
       } else {
         console.log("Renamed successfully");
+        res.sendStatus(202);
       }
+      res.end();
   });
 });
 
@@ -286,8 +295,10 @@ app.post('/create_events', function(req, res){
         var stmt2 = db.prepare("INSERT INTO users_events (user_id, event_id) VALUES(?,?)");
         stmt2.run(user_id, this.lastID);
         stmt2.finalize();
+        res.sendStatus(202);
         // callback({"status":true,"val":""});
       }
+      res.end();
     });
   });
 
