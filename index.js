@@ -55,7 +55,7 @@ app.get('/user/:user_id', function(req, res){
 // GET all of the events
 app.get('/events', function(req, res){
   // var sql = "SELECT * from events";
-  var sql = "SELECT events.id, events.title, events.description, events.location, events.city, events.imgName, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname from events INNER JOIN users ON events.user_id=users.id";
+  var sql = "SELECT events.id, events.title, events.description, events.location, events.city, events.imgName, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname, users.profile_pic from events INNER JOIN users ON events.user_id=users.id";
   db.all(sql, function(err,rows){
     res.end(JSON.stringify(rows));
   });
@@ -64,7 +64,7 @@ app.get('/events', function(req, res){
 
 // GET all of the events in a particular city (CASE INCENSITIVE)
 app.get('/events/:city_name', function(req, res){
-  var sql = "SELECT events.id, events.title, events.description, events.location, events.city, events.imgName, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname from events INNER JOIN users ON events.user_id=users.id WHERE city='"+req.params.city_name+"' COLLATE NOCASE";
+  var sql = "SELECT events.id, events.title, events.description, events.location, events.city, events.imgName, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname, users.profile_pic from events INNER JOIN users ON events.user_id=users.id WHERE city='"+req.params.city_name+"' COLLATE NOCASE";
   db.all(sql, function(err,rows){
     res.end(JSON.stringify(rows));
   });
@@ -91,7 +91,7 @@ app.get('/my_events/:user_id', function(req, res){
 
 // GET upcoming events of a user
 app.get('/upcoming_events/:user_id', function(req, res){
-  var sql = "SELECT events.id, events.title, events.description, events.location, events.city, events.imgName, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname from events INNER JOIN users_events ON events.id=users_events.event_id INNER JOIN users ON events.user_id=users.id WHERE users_events.user_id="+req.params.user_id;
+  var sql = "SELECT events.id, events.title, events.description, events.location, events.city, events.imgName, events.startdate, events.starttime, events.enddate, events.endtime, events.type, events.user_id, users.fname, users.lname, users.profile_pic from events INNER JOIN users_events ON events.id=users_events.event_id INNER JOIN users ON events.user_id=users.id WHERE users_events.user_id="+req.params.user_id;
   db.all(sql, function(err,rows){
     res.end(JSON.stringify(rows));
   });
