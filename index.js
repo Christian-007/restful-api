@@ -117,27 +117,6 @@ app.get('/users_events/:event_id', function(req, res){
 
 });
 
-// PUT: update user details
-app.put("/edit_user/:user_id", function(req, res) {
-  var user_id = req.params.user_id;
-  var fname = req.body.fname; var lname = req.body.lname; var location = req.body.location;
-  var email = req.body.email; var password = req.body.password; 
-  var user_pic = "user_default.png";
-  var cover_pic = "cover_default.png";
-
-  // var sql = "UPDATE users SET fname = '" + fname + " WHERE id="+user_id;
-  console.log(req.body.fname, req.body.lname);
-  db.run("UPDATE users SET fname = ?, lname = ? WHERE id = ?", fname,lname,user_id, function(error) {
-    if (error) {
-      res.sendStatus(404);
-      console.log(error);
-    }
-    else {
-      res.sendStatus(200);
-    }
-  });
-});
-
 // POST user login
 app.post('/login', function(req, response){
   var email = req.body.email; var password = req.body.password;
@@ -271,6 +250,82 @@ app.delete('/cancel_event/:user_id/:event_id/:owner_id', function(req, res){
     }
   });
 
+});
+
+// PUT: update user password
+app.put("/edit_pass/:user_id", function(req, response) {
+  var user_id = req.params.user_id;
+  var old_pass = req.body.old_pass;
+  var new_pass = req.body.new_pass;
+
+  console.log(user_id, old_pass, new_pass);
+
+  var sql = "SELECT password from users WHERE id="+user_id;
+  db.get(sql, function(err, row) {
+    if(!row){
+      response.send(false);
+      console.log("No user found");  
+    }else {
+      // Check the old password
+      bcrypt.compare(old_pass, row.password, function(err, res) {
+        if(res == true){
+
+          // if the old pass matches, begin hashing the new password
+          bcrypt.hash(new_pass, saltRounds, function(err, hash) {
+            if(err) {
+              res.sendStatus(500);
+            }else{
+              // update the old pass to the new hashed password
+              console.log("Correct password");
+              db.run("UPDATE users SET password = ? WHERE id = ?", hash, user_id, function(error) {
+                if (error) {
+                  response.send(false);
+                  console.log(error);
+                }
+                else {
+                  response.send(true);
+                }
+              });
+            }
+          });
+
+        }else {
+          response.send(res);
+          console.log("Wrong password");
+        } 
+      });
+    }
+
+  });
+});
+
+// PUT: update user details
+app.put("/edit_user/:user_id", function(req, res) {
+  var user_id = req.params.user_id;
+  var fname = req.body.fname; var lname = req.body.lname; var location = req.body.location;
+  var email = req.body.email;
+  var user_pic = req.body.user_pic;
+  var cover_pic = req.body.cover_pic;
+
+  console.log(fname, lname, email, location, user_pic, cover_pic);
+  db.run(
+    "UPDATE users " +
+    "SET fname = case when coalesce(?, '') = '' then fname else ? end," +
+    " lname = case when coalesce(?, '') = '' then lname else ? end," +
+    " email = case when coalesce(?, '') = '' then email else ? end," +
+    " location = case when coalesce(?, '') = '' then location else ? end, " +
+    " cover_pic = case when coalesce(?, 'null') = 'null' then cover_pic else ? end," +
+    " profile_pic = case when coalesce(?, 'null') = 'null' then profile_pic else ? end " +
+    "WHERE id = ?"
+    , fname,fname,lname,lname,email,email,location,location,cover_pic,cover_pic,user_pic,user_pic,user_id, function(error) {
+    if (error) {
+      res.sendStatus(404);
+      console.log(error);
+    }
+    else {
+      res.sendStatus(200);
+    }
+  });
 });
 
 // Return user image
