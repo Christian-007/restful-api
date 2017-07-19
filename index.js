@@ -45,8 +45,8 @@ app.get('/users', function(req, res){
 
 // GET a particular user
 app.get('/user/:user_id', function(req, res){
-  var sql = "SELECT id,fname,lname,email,location from users WHERE id="+req.params.user_id;
-  db.all(sql, function(err,rows){
+  var sql = "SELECT id,fname,lname,email,location, profile_pic, cover_pic from users WHERE id="+req.params.user_id;
+  db.get(sql, function(err,rows){
     res.end(JSON.stringify(rows));
   });
 
