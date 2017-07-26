@@ -52,6 +52,38 @@ app.get('/user/:user_id', function(req, res){
 
 });
 
+// GET stars table
+app.get('/stars', function(req, res){
+  var sql = "SELECT * from stars";
+  db.all(sql, function(err,rows){
+    res.end(JSON.stringify(rows));
+  });
+
+});
+
+// GET a starred list of a user
+app.get('/stars/:user_id', function(req, res){
+  var sql = "SELECT * from stars WHERE user_id="+req.params.user_id;
+  db.get(sql, function(err,rows){
+    res.end(JSON.stringify(rows));
+  });
+
+});
+
+
+// GET check if the user is starred or not
+app.get('/star/:user_id/:star_person_id', function(req, res){
+  var sql = "SELECT * from stars WHERE user_id="+req.params.user_id+" AND person_id="+req.params.star_person_id;
+  db.get(sql, function(err,rows){
+    if(err){
+      res.send({"status":false,"val":err});
+    }else{
+      res.send({"status":true,"val":true});
+    }
+  });
+
+});
+
 // GET all of the events
 app.get('/events', function(req, res){
   // var sql = "SELECT * from events";
@@ -113,6 +145,45 @@ app.get('/users_events/:event_id', function(req, res){
   var sql = "SELECT * from users INNER JOIN users_events ON users_events.user_id=users.id WHERE users_events.event_id="+req.params.event_id;
   db.all(sql, function(err,rows){
     res.end(JSON.stringify(rows));
+  });
+
+});
+
+// POST: starring a user
+app.post('/star', function(req, res){
+  var user_id = req.body.user_id;
+  var star_person_id = req.body.star_person_id;
+
+  db.serialize(function() {
+    var stmt = db.prepare("INSERT INTO stars (user_id, person_id) VALUES(?,?)");
+    stmt.run(user_id, star_person_id);
+    stmt.finalize();
+    res.sendStatus(202);
+  });
+
+  console.log(user_id+ ", " + star_person_id);
+});
+
+// DELETE: remove star
+app.delete('/unstar/:user_id/:star_person_id', function(req, res){
+  var user_id = req.params.user_id;
+  var star_person_id = req.params.star_person_id;
+
+  console.log("USER ID: " + user_id+ ", " + " STAR ID: " + star_person_id);
+
+  var sql = "DELETE FROM stars WHERE user_id="+user_id+" AND person_id="+star_person_id;
+  
+  db.serialize(function() {
+    db.run(sql, function(error) {
+      if (error) {
+        console.log(error);
+        res.sendStatus(500);
+      }
+      else {
+        res.sendStatus(202);
+        console.log("Successfully delete record from STARS table!");
+      }
+    });
   });
 
 });
