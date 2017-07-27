@@ -70,6 +70,58 @@ app.get('/stars/:user_id', function(req, res){
 
 });
 
+// GET users data from starred lists
+app.get('/star_people/:user_id', function(req, res){
+  var eventsArray = []; var personIDArray = [];
+  var eventQuery;
+  var sql = "SELECT person_id from stars WHERE user_id="+req.params.user_id;
+
+  db.all(sql, function(err,rows){
+    if(err){
+      console.log("error: " + err);
+      res.sendStatus(500);
+    }else {
+      if(rows.length<1){
+        res.send({"status":false,"val":false});
+      }else{
+
+        // synchronous operation begins
+        var syncOps = [
+          function (done) {
+            for(var i = 0; i<rows.length; i++){
+              personIDArray.push(rows[i].person_id);
+            }
+            done(null, true);  // go to the next function
+          },
+          function (done) {
+            console.log("personID: " + personIDArray);
+            eventQuery =  "SELECT * from users WHERE id IN ("+personIDArray+")";
+            db.all(eventQuery, function(err,event_rows){
+              if(err){
+                console.log("error: " + err);
+                return done(err);
+                
+              }else {
+                eventsArray = event_rows;
+                done(null, true);  // exits from syncOps
+              }
+            });
+          }
+        ];
+
+        async.series(syncOps, function (err, results) {
+            if (err) {
+              res.sendStatus(500);
+              return console.log(err);
+            }
+            res.send(JSON.stringify(eventsArray)); // send json data after syncOps is finished
+        });
+      }
+    }
+  });
+
+});
+
 // GET check if the user is starred or not
 app.get('/star/:user_id/:star_person_id', function(req, res){
   var sql = "SELECT * from stars WHERE user_id="+req.params.user_id+" AND person_id="+req.params.star_person_id;
