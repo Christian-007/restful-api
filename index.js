@@ -154,9 +154,9 @@ app.get('/users_events/:event_id', function(req, res){
 
 // GET recommendation events
 app.get('/recommendations/:user_id', function(req, res){
-  var eventsArray = [];
+  var eventsArray = []; var personIDArray = [];
   var eventQuery;
-  var sql = "SELECT * from stars WHERE user_id="+req.params.user_id;
+  var sql = "SELECT person_id from stars WHERE user_id="+req.params.user_id;
 
   db.all(sql, function(err,rows){
     if(err){
@@ -166,21 +166,43 @@ app.get('/recommendations/:user_id', function(req, res){
       if(rows.length<1){
         res.send({"status":false,"val":false});
       }else{
-        for(var i = 0; i<rows.length; i++){
-          console.log(rows[i].person_id);
-          eventQuery = "SELECT * from events WHERE user_id="+rows[i].person_id;
-          db.each(eventQuery, function(err,event_rows){
-            if(err){
-              console.log("error: " + err);
-              // res.sendStatus(500);
-            }else {
-              eventsArray.push(event_rows);
-              console.log("EVENTS ARRAY: " + JSON.stringify(eventsArray));
-              console.log("EVENTS: " + JSON.stringify(event_rows));
+
+        // synchronous operation begins
+        var syncOps = [
+          function (done) {
+            for(var i = 0; i<rows.length; i++){
+              personIDArray.push(rows[i].person_id);
             }
-          });
-        }  
-        res.sendStatus(200);
+            done(null, true);  // go to the next function
+          },
+          function (done) {
+            console.log("personID: " + personIDArray);
+            eventQuery =  "SELECT events.id, events.title, events.description, events.location, events.city," + 
+            " events.imgName, events.startdate, events.starttime, events.enddate, events.endtime, events.type," +
+            " events.user_id, users.fname, users.lname, users.profile_pic from events INNER JOIN users ON events.user_id=users.id "+
+            "WHERE user_id IN ("+personIDArray+")";
+            // "SELECT * from events WHERE user_id IN ("+personIDArray+")";
+            db.all(eventQuery, function(err,event_rows){
+              if(err){
+                console.log("error: " + err);
+                return done(err);
+                
+              }else {
+                eventsArray = event_rows;
+                console.log("EVENTS ARRAY: " + JSON.stringify(eventsArray));
+                done(null, true);  // exits from syncOps
+              }
+            });
+          }
+        ];
+
+        async.series(syncOps, function (err, results) {
+            if (err) {
+              res.sendStatus(500);
+              return console.log(err);
+            }
+            res.send(JSON.stringify(eventsArray)); // send json data after syncOps is finished
+        });
       }
       
 
