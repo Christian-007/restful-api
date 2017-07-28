@@ -22,18 +22,19 @@ db.serialize(function() {
   //   stmt.run(fname,lname,profile_pic,cover_pic,email,location,hash);
   //   stmt.finalize();
   // });
+  
+  db.run("DROP TABLE events");
+  db.run("CREATE TABLE if not exists events (id INTEGER PRIMARY KEY, title TEXT, description TEXT, location TEXT, city TEXT, imgName TEXT, startdate TEXT, starttime TEXT, endtime TEXT, type TEXT, user_id INTEGER, FOREIGN KEY(user_id) REFERENCES users(id))");
+  var stmt = db.prepare("INSERT INTO events (title, description, location, city, imgName, startdate, starttime, endtime, type, user_id) VALUES(?,?,?,?,?,?,?,?,?,?)");
+  stmt.run("Meal at Beehive", "This event is created for anyone who wants to enjoy British cuisine. Britain is really famous for its pub food and therefore, you need to try it!", "Beehive, West Street", "Sheffield", "beehive.jpg", "2017-08-20", "18:00", "20:00", "public", 1);
+  stmt.finalize();
 
-  db.run("CREATE TABLE if not exists events (id INTEGER PRIMARY KEY, title TEXT, description TEXT, location TEXT, city TEXT, imgName TEXT, startdate TEXT, starttime TEXT, enddate TEXT, endtime TEXT, type TEXT, user_id INTEGER, FOREIGN KEY(user_id) REFERENCES users(id))");
-  // var stmt = db.prepare("INSERT INTO events (title, description, location, startdate, starttime, enddate, endtime, type, user_id) VALUES(?,?,?,?,?,?,?,?,?)");
-  // stmt.run("Meal at Beehive", "hello this is a description", "Sheffield", "2017-06-20", "18:00", "2017-06-20", "20:00", "public", 1);
-  // stmt.finalize();
-
-  // db.run("DROP TABLE users_events");
+  db.run("DROP TABLE users_events");
   db.run("CREATE TABLE if not exists users_events (user_id INTEGER, event_id INTEGER, FOREIGN KEY(user_id) REFERENCES users(id), FOREIGN KEY(event_id) REFERENCES events(id))");
-  // var stmt = db.prepare("INSERT INTO users_events (user_id, event_id) VALUES(?,?)");
-  // stmt.run(1,2);
-  // stmt.finalize();
+  var stmt = db.prepare("INSERT INTO users_events (user_id, event_id) VALUES(?,?)");
+  stmt.run(1,1);
+  stmt.finalize();
 
-  db.run("DROP TABLE stars");
+  // db.run("DROP TABLE stars");
   db.run("CREATE TABLE if not exists stars (id INTEGER PRIMARY KEY, person_id INTEGER, user_id INTEGER, FOREIGN KEY(user_id) REFERENCES users(id))");
 });
