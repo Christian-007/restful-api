@@ -38,6 +38,6 @@ db.serialize(function() {
   // db.run("DROP TABLE stars");
   db.run("CREATE TABLE if not exists stars (id INTEGER PRIMARY KEY, person_id INTEGER, user_id INTEGER, FOREIGN KEY(user_id) REFERENCES users(id))");
 
-  // db.run("DROP TABLE activities");
-  db.run("CREATE TABLE if not exists activities (id INTEGER PRIMARY KEY, user_id INTEGER, event_id INTEGER, type TEXT, date TEXT, time TEXT, FOREIGN KEY(event_id) REFERENCES events(id))");  
+  db.run("DROP TABLE activities");
+  db.run("CREATE TABLE if not exists activities (id INTEGER PRIMARY KEY, user_id INTEGER, event_id INTEGER, activityType TEXT, date TEXT, time TEXT, timeCreated INTEGER, FOREIGN KEY(event_id) REFERENCES events(id))");  
 });

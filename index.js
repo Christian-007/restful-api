@@ -52,6 +52,28 @@ app.get('/user/:user_id', function(req, res){
 
 });
 
+// GET activities table 
+app.get('/activities', function(req, res){
+  var sql = "SELECT * from activities";
+  db.all(sql, function(err,rows){
+    res.end(JSON.stringify(rows));
+  });
+
+});
+
+// GET activities table of a user
+app.get('/activities/:user_id', function(req, res){
+  var select = "activities.id, activities.user_id AS activity_user_id, activities.event_id, activities.activityType, activities.date," +
+  " activities.time, activities.timeCreated, events.title, events.description, events.location, events.city,"+
+  " events.imgName, events.startdate, events.starttime, events.endtime, events.type," + 
+  " events.user_id AS event_user_id, users.fname, users.lname, users.profile_pic";
+  var sql = "SELECT " + select + " from activities INNER JOIN users ON events.user_id=users.id INNER JOIN events ON events.id=activities.event_id WHERE activities.user_id="+req.params.user_id;
+  db.all(sql, function(err,rows){
+    res.end(JSON.stringify(rows));
+  });
+
+});
+
 // GET stars table
 app.get('/stars', function(req, res){
   var sql = "SELECT * from stars";
@@ -110,11 +132,11 @@ app.get('/star_people/:user_id', function(req, res){
         ];
 
         async.series(syncOps, function (err, results) {
-            if (err) {
-              res.sendStatus(500);
-              return console.log(err);
-            }
-            res.send(JSON.stringify(eventsArray)); // send json data after syncOps is finished
+          if (err) {
+            res.sendStatus(500);
+            return console.log(err);
+          }
+          res.send(JSON.stringify(eventsArray)); // send json data after syncOps is finished
         });
       }
     }
@@ -262,6 +284,22 @@ app.get('/recommendations/:user_id', function(req, res){
     }
   });
 
+});
+
+// POST: saving user activities
+app.post('/save_activity', function(req, res){
+  var user_id = req.body.user_id; var event_id = req.body.event_id;
+  var type = req.body.type; var date = req.body.date; var time = req.body.time;
+  var timeCreated = req.body.timeCreated;
+
+  db.serialize(function() {
+    var stmt = db.prepare("INSERT INTO activities (user_id, event_id, activityType, date, time, timeCreated) VALUES(?,?,?,?,?,?)");
+    stmt.run(user_id, event_id, type, date, time, timeCreated);
+    stmt.finalize();
+    res.sendStatus(202);
+  });
+
+  console.log(user_id+ ", " + event_id);
 });
 
 // POST: starring a user
@@ -566,6 +604,16 @@ app.post('/create_events', function(req, res){
   var user_id = req.body.user_id; var city = req.body.city;
   var imgName = req.body.imgName;
 
+  var hours = new Date().getHours(); var minutes = new Date().getMinutes();
+  var year = new Date().getFullYear(); var month = new Date().getMonth(); var date = new Date().getDate();
+  var fullSQLDate = year+"-"+month+"-"+date;
+  var timeSQL = hours+":"+minutes;
+  var timeCreated = new Date().getTime();
+
+  console.log("TIME SQL: " + timeSQL);
+  console.log("TIME: " + timeCreated);
+  console.log("DATE: " + fullSQLDate);
+
   db.serialize(function() {
 
     var sql="INSERT INTO events (title, description, location, city, imgName, startdate, starttime, endtime, type, user_id) VALUES(?,?,?,?,?,?,?,?,?,?)";
@@ -580,6 +628,11 @@ app.post('/create_events', function(req, res){
         var stmt2 = db.prepare("INSERT INTO users_events (user_id, event_id) VALUES(?,?)");
         stmt2.run(user_id, this.lastID);
         stmt2.finalize();
+
+        var stmt3 = db.prepare("INSERT INTO activities (user_id, event_id, type, date, time, timeCreated) VALUES(?,?,?,?,?,?)");
+        stmt.run(user_id, this.lastID, "create", fullSQLDate, timeSQL, timeCreated);
+        stmt.finalize();
+
         res.sendStatus(202);
         // callback({"status":true,"val":""});
       }
