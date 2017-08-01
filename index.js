@@ -603,6 +603,9 @@ app.post('/create_events', function(req, res){
   var endtime = req.body.endtime; var type = req.body.type;
   var user_id = req.body.user_id; var city = req.body.city;
   var imgName = req.body.imgName;
+  
+  if(imgName===null||"null")
+    imgName = "cavendish.jpg"
 
   var hours = new Date().getHours(); var minutes = new Date().getMinutes();
   var year = new Date().getFullYear(); var month = new Date().getMonth(); var date = new Date().getDate();
@@ -625,18 +628,26 @@ app.post('/create_events', function(req, res){
         console.log("val  "+this.lastID);
 
         // INSERT reference to users_events junction table
-        var stmt2 = db.prepare("INSERT INTO users_events (user_id, event_id) VALUES(?,?)");
-        stmt2.run(user_id, this.lastID);
-        stmt2.finalize();
+        var sql2 = "INSERT INTO users_events (user_id, event_id) VALUES(?,?)";
+        db.run(sql2,user_id, this.lastID,function(err){
+          if(err){
+            callback({"status":false,"val":err});
+            console.log("error occurred")
+          }else{
 
-        var stmt3 = db.prepare("INSERT INTO activities (user_id, event_id, type, date, time, timeCreated) VALUES(?,?,?,?,?,?)");
-        stmt.run(user_id, this.lastID, "create", fullSQLDate, timeSQL, timeCreated);
-        stmt.finalize();
-
-        res.sendStatus(202);
-        // callback({"status":true,"val":""});
+            // INSERT reference to users_events junction table
+            var sql3 = "INSERT INTO activities (user_id, event_id, activityType, date, time, timeCreated) VALUES(?,?,?,?,?,?)";
+            db.run(sql3,user_id, this.lastID, "created", fullSQLDate, timeSQL, timeCreated,function(err){
+              if(err){
+                callback({"status":false,"val":err});
+                console.log("error occurred")
+              }else{
+                res.sendStatus(202);
+              }
+            });
+          }
+        });
       }
-      res.end();
     });
   });
 
