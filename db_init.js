@@ -17,7 +17,7 @@ var timeSQL = hours+":"+minutes;
 var timeCreated = new Date().getTime();
 
 db.serialize(function() {
-
+  db.run("BEGIN TRANSACTION;");
   // db.run("DROP TABLE users");
   db.run("CREATE TABLE if not exists users (id INTEGER PRIMARY KEY, fname TEXT, lname TEXT, profile_pic TEXT, cover_pic TEXT, email TEXT, location TEXT, password TEXT)");
 
@@ -45,8 +45,15 @@ db.serialize(function() {
   db.run("CREATE TABLE if not exists stars (id INTEGER PRIMARY KEY, person_id INTEGER, user_id INTEGER, FOREIGN KEY(user_id) REFERENCES users(id))");
 
   db.run("DROP TABLE activities");
-  db.run("CREATE TABLE if not exists activities (id INTEGER PRIMARY KEY, user_id INTEGER, event_id INTEGER, activityType TEXT, date TEXT, time TEXT, timeCreated INTEGER, FOREIGN KEY(event_id) REFERENCES events(id))");  
-  var stmt = db.prepare("INSERT INTO activities (user_id, event_id, activityType, date, time, timeCreated) VALUES(?,?,?,?,?,?)");
-  stmt.run(1,1,"created", fullSQLDate, timeSQL, timeCreated);
+  db.run("CREATE TABLE if not exists activities (id INTEGER PRIMARY KEY, user_id INTEGER, event_id INTEGER, event_title TEXT, activityType TEXT, date TEXT, time TEXT, timeCreated INTEGER)");  
+  var stmt = db.prepare("INSERT INTO activities (user_id, event_id, event_title, activityType, date, time, timeCreated) VALUES(?,?,?,?,?,?,?)");
+  stmt.run(1,1, "Meal at Beehive", "created", fullSQLDate, timeSQL, timeCreated);
   stmt.finalize();
+
+  db.run("COMMIT;");
+  db.close((err) => {
+    if (err) {
+      return console.error(err.message);
+    }
+  });
 });

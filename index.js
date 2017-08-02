@@ -63,11 +63,13 @@ app.get('/activities', function(req, res){
 
 // GET activities table of a user
 app.get('/activities/:user_id', function(req, res){
-  var select = "activities.id, activities.user_id AS activity_user_id, activities.event_id, activities.activityType, activities.date," +
-  " activities.time, activities.timeCreated, events.title, events.description, events.location, events.city,"+
-  " events.imgName, events.startdate, events.starttime, events.endtime, events.type," + 
-  " events.user_id AS event_user_id, users.fname, users.lname, users.profile_pic";
-  var sql = "SELECT " + select + " from activities INNER JOIN users ON events.user_id=users.id INNER JOIN events ON events.id=activities.event_id WHERE activities.user_id="+req.params.user_id;
+  // var select = "activities.id, activities.user_id AS activity_user_id, activities.event_id, activities.activityType, activities.date," +
+  // " activities.time, activities.timeCreated, events.title, events.description, events.location, events.city,"+
+  // " events.imgName, events.startdate, events.starttime, events.endtime, events.type," + 
+  // " events.user_id AS event_user_id, users.fname, users.lname, users.profile_pic";
+  // var sql = "SELECT " + select + " from activities INNER JOIN users ON events.user_id=users.id INNER JOIN events ON events.id=activities.event_id WHERE activities.user_id="+req.params.user_id+
+  // " ORDER BY activities.timeCreated DESC";
+  var sql = "SELECT * from activities WHERE user_id="+req.params.user_id+" ORDER BY timeCreated DESC";
   db.all(sql, function(err,rows){
     res.end(JSON.stringify(rows));
   });
@@ -182,7 +184,7 @@ app.get('/events/:city_name', function(req, res){
 
 // GET a particular event
 app.get('/event/:event_id', function(req, res){
-  var sql = "SELECT * from events WHERE id="+req.params.event_id;
+  var sql = "SELECT * from events INNER JOIN users_events ON events.id=users_events.event_id INNER JOIN users ON events.user_id=users.id WHERE events.id="+req.params.event_id;
   db.get(sql, function(err,rows){
     res.end(JSON.stringify(rows));
   });
@@ -231,6 +233,7 @@ app.get('/recommendations/:user_id', function(req, res){
   var eventsArray = []; var personIDArray = [];
   var eventQuery;
   var sql = "SELECT person_id from stars WHERE user_id="+req.params.user_id;
+  var status = true;
 
   db.all(sql, function(err,rows){
     if(err){
@@ -247,6 +250,7 @@ app.get('/recommendations/:user_id', function(req, res){
             for(var i = 0; i<rows.length; i++){
               personIDArray.push(rows[i].person_id);
             }
+            status = true;
             done(null, true);  // go to the next function
           },
           function (done) {
@@ -262,9 +266,16 @@ app.get('/recommendations/:user_id', function(req, res){
                 return done(err);
                 
               }else {
-                eventsArray = event_rows;
-                console.log("EVENTS ARRAY: " + JSON.stringify(eventsArray));
-                done(null, true);  // exits from syncOps
+                if(event_rows.length<1){
+                  res.send({"status":false,"val":false});
+                  status = false;
+                  done(null, true);  // exits from syncOps
+                }else{
+                  eventsArray = event_rows;
+                  console.log("EVENTS ARRAY: " + JSON.stringify(eventsArray));
+                  status = true;
+                  done(null, true);  // exits from syncOps
+                }
               }
             });
           }
@@ -275,7 +286,9 @@ app.get('/recommendations/:user_id', function(req, res){
               res.sendStatus(500);
               return console.log(err);
             }
-            res.send(JSON.stringify(eventsArray)); // send json data after syncOps is finished
+            if (status) {
+              res.send(JSON.stringify(eventsArray)); // send json data after syncOps is finished
+            }
         });
       }
       
@@ -289,12 +302,13 @@ app.get('/recommendations/:user_id', function(req, res){
 // POST: saving user activities
 app.post('/save_activity', function(req, res){
   var user_id = req.body.user_id; var event_id = req.body.event_id;
+  var event_title = req.body.event_title;
   var type = req.body.type; var date = req.body.date; var time = req.body.time;
   var timeCreated = req.body.timeCreated;
 
   db.serialize(function() {
-    var stmt = db.prepare("INSERT INTO activities (user_id, event_id, activityType, date, time, timeCreated) VALUES(?,?,?,?,?,?)");
-    stmt.run(user_id, event_id, type, date, time, timeCreated);
+    var stmt = db.prepare("INSERT INTO activities (user_id, event_id, event_title, activityType, date, time, timeCreated) VALUES(?,?,?,?,?,?,?)");
+    stmt.run(user_id, event_id, event_title, type, date, time, timeCreated);
     stmt.finalize();
     res.sendStatus(202);
   });
@@ -454,9 +468,12 @@ app.delete('/cancel_event/:user_id/:event_id/:owner_id', function(req, res){
       ];
 
       async.series(asyncOps, function (err, results) {
-          if (err) return console.log(err);
-          res.send(JSON.stringify({ "data": "successfully deleted record" }));
-          console.log("Successfully delete record from USER_EVENTS table!");
+        if (err) {
+          res.sendStatus(500);
+          return console.log(err);
+        }
+        res.sendStatus(200);
+        console.log("Successfully delete record from USER_EVENTS table!");
       });
 
     }else {
@@ -467,7 +484,7 @@ app.delete('/cancel_event/:user_id/:event_id/:owner_id', function(req, res){
           console.log(error);
         }
         else {
-          res.send(JSON.stringify({ "data": "successfully deleted record" }));
+          res.sendStatus(200);
           console.log("Successfully delete record from USERS_EVENTS table!");
         }
       });
@@ -610,45 +627,58 @@ app.post('/create_events', function(req, res){
   var hours = new Date().getHours(); var minutes = new Date().getMinutes();
   var year = new Date().getFullYear(); var month = new Date().getMonth(); var date = new Date().getDate();
   var fullSQLDate = year+"-"+month+"-"+date;
-  var timeSQL = hours+":"+minutes;
+  var timeSQL = hours+":"+(minutes<10?'0':'')+minutes;
   var timeCreated = new Date().getTime();
 
+  var eventID;
   console.log("TIME SQL: " + timeSQL);
   console.log("TIME: " + timeCreated);
   console.log("DATE: " + fullSQLDate);
 
-  db.serialize(function() {
+  // synchronous operation begins
+  var syncOps = [
+    function (done) {
+      var sql="INSERT INTO events (title, description, location, city, imgName, startdate, starttime, endtime, type, user_id) VALUES(?,?,?,?,?,?,?,?,?,?)";
+      db.run(sql,title,description,location,city,imgName,startdate,starttime,endtime,type,user_id,function(err){
+        if(err){
+          callback({"status":false,"val":err});
+          console.log("error occurred");
+        }else{
+            eventID = this.lastID;
+            done(null, true);  // go to the next function  
+        }
+      });
+    },
+    function (done) {
+      var sql2 = "INSERT INTO users_events (user_id, event_id) VALUES(?,?)";
+      db.run(sql2,user_id, eventID,function(err){
+        if(err){
+          callback({"status":false,"val":err});
+          console.log("error occurred");
+        }else{  
+          done(null, true);  // go to the next function  
+        }
+      });
+    },
+    function (done) {
+      var sql3 = "INSERT INTO activities (user_id, event_id, event_title, activityType, date, time, timeCreated) VALUES(?,?,?,?,?,?,?)";
+      db.run(sql3,user_id, eventID, title, "created", fullSQLDate, timeSQL, timeCreated,function(err){
+        if(err){
+          callback({"status":false,"val":err});
+          console.log("error occurred");
+        }else{
+          done(null, true);  // go to the next function  
+        }
+      });
+    }
+  ];
 
-    var sql="INSERT INTO events (title, description, location, city, imgName, startdate, starttime, endtime, type, user_id) VALUES(?,?,?,?,?,?,?,?,?,?)";
-    db.run(sql,title,description,location,city,imgName,startdate,starttime,endtime,type,user_id,function(err){
-      if(err){
-        callback({"status":false,"val":err});
-        console.log("error occurred")
-      }else{
-        console.log("val  "+this.lastID);
-
-        // INSERT reference to users_events junction table
-        var sql2 = "INSERT INTO users_events (user_id, event_id) VALUES(?,?)";
-        db.run(sql2,user_id, this.lastID,function(err){
-          if(err){
-            callback({"status":false,"val":err});
-            console.log("error occurred")
-          }else{
-
-            // INSERT reference to users_events junction table
-            var sql3 = "INSERT INTO activities (user_id, event_id, activityType, date, time, timeCreated) VALUES(?,?,?,?,?,?)";
-            db.run(sql3,user_id, this.lastID, "created", fullSQLDate, timeSQL, timeCreated,function(err){
-              if(err){
-                callback({"status":false,"val":err});
-                console.log("error occurred")
-              }else{
-                res.sendStatus(202);
-              }
-            });
-          }
-        });
-      }
-    });
+  async.series(syncOps, function (err, results) {
+    if (err) {
+      res.sendStatus(500);
+      return console.log(err);
+    }
+    res.sendStatus(200); // end the transaction
   });
 
   console.log(title+ ", " + description+ ", " + location+ ", " + city + ", " + imgName + ", " + startdate+ ", " + starttime+ ", " + endtime+ ", " + type+ ", " + user_id);
