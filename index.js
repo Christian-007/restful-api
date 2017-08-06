@@ -63,12 +63,6 @@ app.get('/activities', function(req, res){
 
 // GET activities table of a user
 app.get('/activities/:user_id', function(req, res){
-  // var select = "activities.id, activities.user_id AS activity_user_id, activities.event_id, activities.activityType, activities.date," +
-  // " activities.time, activities.timeCreated, events.title, events.description, events.location, events.city,"+
-  // " events.imgName, events.startdate, events.starttime, events.endtime, events.type," + 
-  // " events.user_id AS event_user_id, users.fname, users.lname, users.profile_pic";
-  // var sql = "SELECT " + select + " from activities INNER JOIN users ON events.user_id=users.id INNER JOIN events ON events.id=activities.event_id WHERE activities.user_id="+req.params.user_id+
-  // " ORDER BY activities.timeCreated DESC";
   var sql = "SELECT * from activities WHERE user_id="+req.params.user_id+" ORDER BY timeCreated DESC";
   db.all(sql, function(err,rows){
     res.end(JSON.stringify(rows));
@@ -184,7 +178,7 @@ app.get('/events/:city_name', function(req, res){
 
 // GET a particular event
 app.get('/event/:event_id', function(req, res){
-  var sql = "SELECT * from events INNER JOIN users_events ON events.id=users_events.event_id INNER JOIN users ON events.user_id=users.id WHERE events.id="+req.params.event_id;
+  var sql = "SELECT events.id, events.title, events.description, events.location, events.city, events.imgName, events.startdate, events.starttime, events.endtime, events.type, events.user_id, users.fname, users.lname, users.profile_pic from events INNER JOIN users_events ON events.id=users_events.event_id INNER JOIN users ON events.user_id=users.id WHERE events.id="+req.params.event_id;
   db.get(sql, function(err,rows){
     res.end(JSON.stringify(rows));
   });
