@@ -616,7 +616,7 @@ app.post('/create_events', function(req, res){
   var imgName = req.body.imgName;
   
   if(imgName===null||"null")
-    imgName = "cavendish.jpg"
+    imgName = "cover_default.png"
 
   var hours = new Date().getHours(); var minutes = new Date().getMinutes();
   var year = new Date().getFullYear(); var month = new Date().getMonth(); var date = new Date().getDate();
