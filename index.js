@@ -615,8 +615,8 @@ app.post('/create_events', function(req, res){
   var user_id = req.body.user_id; var city = req.body.city;
   var imgName = req.body.imgName;
   
-  if(imgName===null||"null")
-    imgName = "cover_default.png"
+  // if(imgName===null||"null")
+  //   imgName = "cover_default.png"
 
   var hours = new Date().getHours(); var minutes = new Date().getMinutes();
   var year = new Date().getFullYear(); var month = new Date().getMonth(); var date = new Date().getDate();
